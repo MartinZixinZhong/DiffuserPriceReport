@@ -1,5 +1,5 @@
-const CACHE_NAME = "glassmartin-quote-pwa-v2";
-const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./app-icon.jpg"];
+const CACHE_NAME = "glassmartin-quote-pwa-v3";
+const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./app-icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
