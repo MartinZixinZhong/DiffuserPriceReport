@@ -1,0 +1,18 @@
+{
+  "name": "GlassMartin 报价生成器",
+  "short_name": "GM报价",
+  "description": "GlassMartin 香薰系统 Excel 与 PDF 报价生成工具",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
