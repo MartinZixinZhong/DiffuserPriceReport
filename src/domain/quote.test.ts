@@ -122,8 +122,42 @@ describe("calculateQuote", () => {
     });
 
     expect(result.totalTheoreticalOilLiters).toBe(0.075);
-    expect(result.recommendedOilLiters).toBe(1);
-    expect(result.firstMonthOilAmount).toBe(80);
+    expect(result.recommendedOilLiters).toBe(0.1);
+    expect(result.firstMonthOilAmount).toBe(8);
+  });
+
+  it("rounds recommended oil liters up to one decimal place", () => {
+    const result = calculateQuote({
+      customerName: "测试客户",
+      quoteNumber: "GM-CSKH-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "",
+      deviceUnitPrice: 100,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 80,
+      followUpDiscountPercent: 100,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 1,
+          dailyHours: 23.41,
+          spraySeconds: 1,
+          pauseSeconds: 0,
+          oilMlPerHourPerDevice: 1000,
+          monthlyDays: 1,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(result.totalTheoreticalOilLiters).toBe(23.41);
+    expect(result.recommendedOilLiters).toBe(23.5);
+    expect(result.firstMonthOilAmount).toBe(1880);
   });
 });
 

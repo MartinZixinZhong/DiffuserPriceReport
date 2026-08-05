@@ -2,6 +2,8 @@ import * as XLSX from "xlsx";
 import type { QuoteResult } from "../domain/quote";
 
 export function buildExcelRows(result: QuoteResult) {
+  const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
+
   return {
     meta: [
       [
@@ -16,7 +18,7 @@ export function buildExcelRows(result: QuoteResult) {
         "香型",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`
       ],
-      ["报价编号", result.quoteNumber, "月度精油预算", `约${result.recommendedOilLiters}升/月`],
+      ["报价编号", result.quoteNumber, "月度精油预算", `约${recommendedOilLiters}升/月`],
       ["报价日期", result.quoteDate, "报价有效期", result.validity]
     ],
     quoteLines: [
@@ -36,7 +38,7 @@ export function buildExcelRows(result: QuoteResult) {
         "香薰精油",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
         "升/月",
-        result.recommendedOilLiters,
+        recommendedOilLiters,
         result.oilUnitPrice,
         result.firstMonthOilAmount,
         "建议月度采购量"
@@ -82,14 +84,14 @@ export function buildExcelRows(result: QuoteResult) {
         "",
         result.totalTheoreticalOilLiters,
         result.deviceAmount,
-        `建议按约${result.recommendedOilLiters}L/月采购`
+        `建议按约${recommendedOilLiters}L/月采购`
       ]
     ],
     businessNotes: [
       ["商务说明"],
       ["1. 精油理论耗量按设备台数、每日运行小时、喷停比例、持续喷香耗油量和每月运行天数测算。"],
       [
-        `2. 月度采购建议按理论耗量向上取整至整数升：${result.totalTheoreticalOilLiters}L -> ${result.recommendedOilLiters}L。`
+        `2. 月度采购建议按理论耗量向上取整至小数点后一位：${result.totalTheoreticalOilLiters}L -> ${recommendedOilLiters}L。`
       ],
       [
         "3. 报价币种为人民币（CNY）；税费、运输费用、安装费用、付款方式及交货周期请以双方最终确认的销售合同为准。"

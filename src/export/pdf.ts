@@ -5,6 +5,8 @@ import type { QuoteResult } from "../domain/quote";
 export type PdfModel = ReturnType<typeof buildPdfModel>;
 
 export function buildPdfModel(result: QuoteResult) {
+  const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
+
   return {
     title: "GlassMartin 商用香薰系统报价单",
     subtitle: "专业空间香氛解决方案 | 扩香设备 · 香薰精油 · 用量规划",
@@ -24,7 +26,7 @@ export function buildPdfModel(result: QuoteResult) {
       {
         product: "香薰精油",
         spec: `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
-        quantity: `${result.recommendedOilLiters} 升/月`,
+        quantity: `${recommendedOilLiters} 升/月`,
         unitPrice: `${result.oilUnitPrice.toFixed(2)} 元`,
         amount: `${result.firstMonthOilAmount.toFixed(2)} 元`
       }
@@ -41,7 +43,7 @@ export function buildPdfModel(result: QuoteResult) {
     summary: {
       totalDeviceQuantity: result.totalDeviceQuantity,
       totalTheoreticalOilLiters: result.totalTheoreticalOilLiters,
-      recommendedOilLiters: result.recommendedOilLiters,
+      recommendedOilLiters,
       firstPurchaseTotal: result.firstPurchaseTotal,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
       followUpDiscountPercent: result.followUpDiscountPercent
@@ -191,7 +193,7 @@ export function buildPdfHtml(model: PdfModel): string {
       </table>
       <ol class="pdf-notes">
         <li>精油理论耗量按设备台数、每日运行小时、喷停比例、持续喷香耗油量和每月运行天数测算。</li>
-        <li>月度采购建议按理论耗量向上取整至整数升：${escapeHtml(model.summary.totalTheoreticalOilLiters)}L -> ${escapeHtml(model.summary.recommendedOilLiters)}L。</li>
+        <li>月度采购建议按理论耗量向上取整至小数点后一位：${escapeHtml(model.summary.totalTheoreticalOilLiters)}L -> ${escapeHtml(model.summary.recommendedOilLiters)}L。</li>
         <li>报价币种为人民币（CNY）；税费、运输费用、安装费用、付款方式及交货周期请以双方最终确认的销售合同为准。</li>
         <li>GlassMartin 可提供设备参数设置、香氛使用建议及后续补充采购支持。</li>
       </ol>

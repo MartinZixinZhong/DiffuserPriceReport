@@ -295,7 +295,7 @@ export default function App() {
             </div>
             <div>
               <dt>建议采购量</dt>
-              <dd>{result.recommendedOilLiters} L</dd>
+              <dd>{result.recommendedOilLiters.toFixed(1)} L</dd>
             </div>
             <div>
               <dt>设备金额</dt>

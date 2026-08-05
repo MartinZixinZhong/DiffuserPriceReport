@@ -46,6 +46,7 @@ export type QuoteResult = Omit<QuoteInput, "sites"> & {
 
 const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const roundLiters = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
+const ceilLitersToOneDecimal = (value: number) => Math.ceil(value * 10 - Number.EPSILON) / 10;
 
 export function calculateQuote(input: QuoteInput): QuoteResult {
   const sites = input.sites.map((site) => {
@@ -73,7 +74,7 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
   const totalTheoreticalOilLiters = roundLiters(
     sites.reduce((sum, site) => sum + site.theoreticalOilLiters, 0)
   );
-  const recommendedOilLiters = Math.ceil(totalTheoreticalOilLiters);
+  const recommendedOilLiters = ceilLitersToOneDecimal(totalTheoreticalOilLiters);
   const deviceAmount = roundCurrency(totalDeviceQuantity * input.deviceUnitPrice);
   const firstMonthOilAmount = roundCurrency(recommendedOilLiters * input.oilUnitPrice);
   const firstPurchaseTotal = roundCurrency(deviceAmount + firstMonthOilAmount);
