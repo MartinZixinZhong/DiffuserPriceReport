@@ -8,6 +8,8 @@ export function buildPdfModel(result: QuoteResult) {
   const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
   const measuredOilLiters = result.totalTheoreticalOilLiters.toFixed(3);
   const monthlyOilLiters = result.monthlyTheoreticalOilLiters.toFixed(3);
+  const followUpQuantityLabel =
+    result.usageMode === "custom" ? "本次指定采购量" : `本次建议${result.usageLabel}采购量`;
   const usageNote =
     result.usageMode === "yearly"
       ? `年度采购建议按月度理论耗量乘以 12 后向上取整至小数点后一位：${monthlyOilLiters}L/月 × 12 = ${measuredOilLiters}L/年 -> ${recommendedOilLiters}L/年。`
@@ -54,8 +56,10 @@ export function buildPdfModel(result: QuoteResult) {
       monthlyTheoreticalOilLiters: result.monthlyTheoreticalOilLiters,
       recommendedOilLiters,
       firstPurchaseTotal: result.firstPurchaseTotal,
+      followUpOilUnitPrice: result.followUpOilUnitPrice,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
       followUpDiscountPercent: result.followUpDiscountPercent,
+      followUpQuantityLabel,
       quoteTypeLabel: result.quoteTypeLabel,
       usageBudgetLabel: result.usageBudgetLabel,
       usageUnitLabel: result.usageUnitLabel,
@@ -75,6 +79,59 @@ function escapeHtml(value: string | number): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function trimBlankCanvasBottom(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const context = canvas.getContext("2d");
+  if (!context) return canvas;
+
+  const image = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = image.data;
+  let lastContentRow = canvas.height - 1;
+
+  for (; lastContentRow >= 0; lastContentRow -= 1) {
+    let hasContent = false;
+    for (let x = 0; x < canvas.width; x += 1) {
+      const index = (lastContentRow * canvas.width + x) * 4;
+      const alpha = data[index + 3];
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+
+      if (alpha > 0 && (red < 250 || green < 250 || blue < 250)) {
+        hasContent = true;
+        break;
+      }
+    }
+
+    if (hasContent) break;
+  }
+
+  const trimPadding = 64;
+  const trimmedHeight = Math.min(canvas.height, lastContentRow + 1 + trimPadding);
+  if (trimmedHeight >= canvas.height) return canvas;
+
+  const trimmedCanvas = document.createElement("canvas");
+  trimmedCanvas.width = canvas.width;
+  trimmedCanvas.height = Math.max(1, trimmedHeight);
+  const trimmedContext = trimmedCanvas.getContext("2d");
+  if (!trimmedContext) return canvas;
+
+  trimmedContext.fillStyle = "#ffffff";
+  trimmedContext.fillRect(0, 0, trimmedCanvas.width, trimmedCanvas.height);
+  trimmedContext.drawImage(
+    canvas,
+    0,
+    0,
+    canvas.width,
+    trimmedCanvas.height,
+    0,
+    0,
+    trimmedCanvas.width,
+    trimmedCanvas.height
+  );
+
+  return trimmedCanvas;
 }
 
 export function buildPdfHtml(model: PdfModel): string {
@@ -105,7 +162,11 @@ export function buildPdfHtml(model: PdfModel): string {
     )
     .join("");
   const followUpSummary = model.summary.showFollowUpOilFee
-    ? `<div><span>${escapeHtml(model.summary.followUpOilFeeLabel)}（${escapeHtml(model.summary.followUpDiscountPercent)}%）</span><strong>${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元</strong></div>`
+    ? `<div class="pdf-follow-up-total">
+          <span>后续精油采购（${escapeHtml(model.summary.followUpDiscountPercent)}%折扣）</span>
+          <strong>${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元</strong>
+          <p>折后单价：${escapeHtml(model.summary.followUpOilUnitPrice.toFixed(2))} 元/L；${escapeHtml(model.summary.followUpQuantityLabel)} ${escapeHtml(model.summary.recommendedOilLiters)}${escapeHtml(model.summary.usageUnitLabel)}，后续采购精油总价：${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元。</p>
+        </div>`
     : "";
 
   return `
@@ -151,23 +212,45 @@ export function buildPdfHtml(model: PdfModel): string {
         }
         .pdf-summary {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: 1.35fr 1fr;
           gap: 12px;
           margin-top: 22px;
         }
-        .pdf-summary div {
+        .pdf-total-primary,
+        .pdf-follow-up-total {
           padding: 14px;
           border-radius: 8px;
-          background: #f3f4f6;
+        }
+        .pdf-total-primary {
+          background: #111827;
+          color: #ffffff;
+        }
+        .pdf-follow-up-total {
+          border: 1px solid #e8c779;
+          background: #fff8e6;
+          color: #5f430f;
         }
         .pdf-summary span {
           display: block;
           margin-bottom: 6px;
-          color: #4b5563;
           font-size: 12px;
         }
-        .pdf-summary strong {
-          font-size: 18px;
+        .pdf-total-primary span {
+          color: #d1d5db;
+        }
+        .pdf-follow-up-total span {
+          color: #7a5a18;
+        }
+        .pdf-total-primary strong {
+          font-size: 24px;
+        }
+        .pdf-follow-up-total strong {
+          font-size: 17px;
+        }
+        .pdf-follow-up-total p {
+          margin: 8px 0 0;
+          font-size: 11px;
+          line-height: 1.65;
         }
         .pdf-notes {
           margin: 22px 0 0;
@@ -202,7 +285,7 @@ export function buildPdfHtml(model: PdfModel): string {
         <tbody>${quoteRows}</tbody>
       </table>
       <section class="pdf-summary">
-        <div><span>${escapeHtml(model.summary.purchaseTotalLabel)}</span><strong>${escapeHtml(model.summary.firstPurchaseTotal.toFixed(2))} 元</strong></div>
+        <div class="pdf-total-primary"><span>${escapeHtml(model.summary.purchaseTotalLabel)}</span><strong>${escapeHtml(model.summary.firstPurchaseTotal.toFixed(2))} 元</strong></div>
         ${followUpSummary}
       </section>
       <h2 class="pdf-section-title">二、项目配置与用量摘要</h2>
@@ -237,11 +320,14 @@ export async function createPdfBlob(result: QuoteResult): Promise<Blob> {
   document.body.append(container);
 
   try {
-    const canvas = await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 });
+    const canvas = trimBlankCanvasBottom(
+      await html2canvas(container, { backgroundColor: "#ffffff", scale: 2 })
+    );
     const imageData = canvas.toDataURL("image/png");
     const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "pt" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const pageOverflowTolerance = 2;
     const imageHeight = (canvas.height * pageWidth) / canvas.width;
     let remainingHeight = imageHeight;
     let position = 0;
@@ -249,7 +335,7 @@ export async function createPdfBlob(result: QuoteResult): Promise<Blob> {
     doc.addImage(imageData, "PNG", 0, position, pageWidth, imageHeight);
     remainingHeight -= pageHeight;
 
-    while (remainingHeight > 0) {
+    while (remainingHeight > pageOverflowTolerance) {
       position = remainingHeight - imageHeight;
       doc.addPage();
       doc.addImage(imageData, "PNG", 0, position, pageWidth, imageHeight);

@@ -72,10 +72,10 @@ export function buildExcelRows(result: QuoteResult) {
               result.followUpOilFeeLabel,
               "",
               "",
-              "",
-              "",
+              recommendedOilLiters,
+              result.followUpOilUnitPrice,
               result.followUpMonthlyOilFee,
-              `按${result.followUpDiscountPercent}%折扣计算`
+              `后续补充采购按${result.followUpDiscountPercent}%折扣计算，折后单价 ${result.followUpOilUnitPrice.toFixed(2)} 元/L`
             ]
           ]
         : [])
@@ -123,6 +123,7 @@ export function buildExcelRows(result: QuoteResult) {
     ],
     summary: {
       firstPurchaseTotal: result.firstPurchaseTotal,
+      followUpOilUnitPrice: result.followUpOilUnitPrice,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
       showFollowUpOilFee: result.showFollowUpOilFee
     }

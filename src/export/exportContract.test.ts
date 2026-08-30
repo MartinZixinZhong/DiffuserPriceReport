@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculateQuote } from "../domain/quote";
 import { buildExcelRows } from "./excel";
-import { buildPdfModel } from "./pdf";
+import { buildPdfHtml, buildPdfModel } from "./pdf";
 
 const result = calculateQuote({
   customerName: "邯郸上谷菲尔酒店",
@@ -40,10 +40,19 @@ describe("export contract", () => {
     const pdfModel = buildPdfModel(result);
 
     expect(excelRows.summary.firstPurchaseTotal).toBe(result.firstPurchaseTotal);
+    expect(excelRows.summary.followUpOilUnitPrice).toBe(result.followUpOilUnitPrice);
     expect(excelRows.summary.followUpMonthlyOilFee).toBe(result.followUpMonthlyOilFee);
     expect(pdfModel.summary.firstPurchaseTotal).toBe(result.firstPurchaseTotal);
+    expect(pdfModel.summary.followUpOilUnitPrice).toBe(result.followUpOilUnitPrice);
     expect(pdfModel.summary.followUpMonthlyOilFee).toBe(result.followUpMonthlyOilFee);
     expect(pdfModel.summary.usageUnitLabel).toBe(result.usageUnitLabel);
+  });
+
+  it("explains follow-up oil purchase unit price and total in PDF output", () => {
+    const pdfHtml = buildPdfHtml(buildPdfModel(result));
+
+    expect(pdfHtml).toContain("折后单价：110.97 元/L");
+    expect(pdfHtml).toContain("后续采购精油总价：2663.28 元");
   });
 
   it("omits follow-up fee rows for annual package quotes", () => {
@@ -61,5 +70,6 @@ describe("export contract", () => {
     expect(excelRows.summary.showFollowUpOilFee).toBe(false);
     expect(pdfModel.summary.showFollowUpOilFee).toBe(false);
     expect(pdfModel.summary.purchaseTotalLabel).toBe("包年报价总价");
+    expect(buildPdfHtml(pdfModel)).not.toContain("后续精油采购");
   });
 });

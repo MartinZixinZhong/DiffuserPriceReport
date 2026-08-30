@@ -358,14 +358,16 @@ export default function App() {
               <dt>{result.oilAmountLabel}</dt>
               <dd>{result.firstMonthOilAmount.toFixed(2)} 元</dd>
             </div>
-            <div>
+            <div className="summary-primary">
               <dt>{result.purchaseTotalLabel}</dt>
               <dd>{result.firstPurchaseTotal.toFixed(2)} 元</dd>
             </div>
             {result.showFollowUpOilFee && (
-              <div>
+              <div className="summary-follow-up">
                 <dt>{result.followUpOilFeeLabel}</dt>
-                <dd>{result.followUpMonthlyOilFee.toFixed(2)} 元</dd>
+                <dd>
+                  {result.followUpOilUnitPrice.toFixed(2)} 元/L · {result.followUpMonthlyOilFee.toFixed(2)} 元
+                </dd>
               </div>
             )}
           </dl>

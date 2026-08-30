@@ -44,6 +44,7 @@ describe("calculateQuote", () => {
     expect(result.deviceAmount).toBe(3920);
     expect(result.firstMonthOilAmount).toBe(2959.2);
     expect(result.firstPurchaseTotal).toBe(6879.2);
+    expect(result.followUpOilUnitPrice).toBe(110.97);
     expect(result.followUpMonthlyOilFee).toBe(2663.28);
   });
 

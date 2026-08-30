@@ -157,6 +157,39 @@ textarea {
   font-weight: 800;
 }
 
+.summary .summary-primary {
+  margin: 4px 0;
+  border-radius: 8px;
+  padding: 14px;
+  border-bottom: 0;
+  background: #111827;
+  color: #ffffff;
+}
+
+.summary .summary-primary dt {
+  color: #d1d5db;
+}
+
+.summary .summary-primary dd {
+  font-size: 20px;
+}
+
+.summary .summary-follow-up {
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e8c779;
+  background: #fff8e6;
+}
+
+.summary .summary-follow-up dt {
+  color: #7a5a18;
+}
+
+.summary .summary-follow-up dd {
+  color: #5f430f;
+  font-size: 14px;
+}
+
 .errors {
   margin: 0 0 12px;
   padding-left: 18px;

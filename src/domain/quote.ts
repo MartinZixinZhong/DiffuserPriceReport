@@ -48,6 +48,7 @@ export type QuoteResult = Omit<QuoteInput, "sites"> & {
   deviceAmount: number;
   firstMonthOilAmount: number;
   firstPurchaseTotal: number;
+  followUpOilUnitPrice: number;
   followUpMonthlyOilFee: number;
   usageLabel: string;
   usageUnitLabel: string;
@@ -146,9 +147,10 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
   const deviceAmount = roundCurrency(totalDeviceQuantity * input.deviceUnitPrice);
   const firstMonthOilAmount = roundCurrency(recommendedOilLiters * input.oilUnitPrice);
   const firstPurchaseTotal = roundCurrency(deviceAmount + firstMonthOilAmount);
-  const followUpMonthlyOilFee = roundCurrency(
-    firstMonthOilAmount * (input.followUpDiscountPercent / 100)
+  const followUpOilUnitPrice = roundCurrency(
+    input.oilUnitPrice * (input.followUpDiscountPercent / 100)
   );
+  const followUpMonthlyOilFee = roundCurrency(recommendedOilLiters * followUpOilUnitPrice);
 
   const labels =
     input.quoteType === "annualPackage"
@@ -172,6 +174,7 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
     deviceAmount,
     firstMonthOilAmount,
     firstPurchaseTotal,
+    followUpOilUnitPrice,
     followUpMonthlyOilFee,
     ...labels
   };
