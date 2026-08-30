@@ -15,6 +15,9 @@ const result = calculateQuote({
   oilName: "至尊白茶",
   oilDescription: "50%含量，日本出光Isododecane挥发溶剂载体",
   oilUnitPrice: 123.3,
+  quoteType: "standard",
+  usageMode: "monthly",
+  customOilLiters: 0,
   followUpDiscountPercent: 90,
   sites: [
     {
@@ -40,5 +43,23 @@ describe("export contract", () => {
     expect(excelRows.summary.followUpMonthlyOilFee).toBe(result.followUpMonthlyOilFee);
     expect(pdfModel.summary.firstPurchaseTotal).toBe(result.firstPurchaseTotal);
     expect(pdfModel.summary.followUpMonthlyOilFee).toBe(result.followUpMonthlyOilFee);
+    expect(pdfModel.summary.usageUnitLabel).toBe(result.usageUnitLabel);
+  });
+
+  it("omits follow-up fee rows for annual package quotes", () => {
+    const packageResult = calculateQuote({
+      ...result,
+      quoteType: "annualPackage",
+      usageMode: "yearly",
+      customOilLiters: 0,
+      sites: result.sites
+    });
+    const excelRows = buildExcelRows(packageResult);
+    const pdfModel = buildPdfModel(packageResult);
+
+    expect(excelRows.quoteLines.flat()).not.toContain("后续年度精油费用");
+    expect(excelRows.summary.showFollowUpOilFee).toBe(false);
+    expect(pdfModel.summary.showFollowUpOilFee).toBe(false);
+    expect(pdfModel.summary.purchaseTotalLabel).toBe("包年报价总价");
   });
 });

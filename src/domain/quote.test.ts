@@ -15,6 +15,9 @@ describe("calculateQuote", () => {
       oilName: "至尊白茶",
       oilDescription: "50%含量，日本出光Isododecane挥发溶剂载体",
       oilUnitPrice: 123.3,
+      quoteType: "standard",
+      usageMode: "monthly",
+      customOilLiters: 0,
       followUpDiscountPercent: 90,
       sites: [
         {
@@ -34,8 +37,10 @@ describe("calculateQuote", () => {
     expect(result.totalDeviceQuantity).toBe(20);
     expect(result.sites[0].effectiveSprayRatio).toBe(0.5);
     expect(result.sites[0].theoreticalOilLiters).toBe(24);
+    expect(result.monthlyTheoreticalOilLiters).toBe(24);
     expect(result.totalTheoreticalOilLiters).toBe(24);
     expect(result.recommendedOilLiters).toBe(24);
+    expect(result.usageUnitLabel).toBe("升/月");
     expect(result.deviceAmount).toBe(3920);
     expect(result.firstMonthOilAmount).toBe(2959.2);
     expect(result.firstPurchaseTotal).toBe(6879.2);
@@ -55,6 +60,9 @@ describe("calculateQuote", () => {
       oilName: "白茶",
       oilDescription: "",
       oilUnitPrice: 100,
+      quoteType: "standard",
+      usageMode: "monthly",
+      customOilLiters: 0,
       followUpDiscountPercent: 85,
       sites: [
         {
@@ -105,6 +113,9 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      quoteType: "standard",
+      usageMode: "monthly",
+      customOilLiters: 0,
       followUpDiscountPercent: 100,
       sites: [
         {
@@ -139,6 +150,9 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      quoteType: "standard",
+      usageMode: "monthly",
+      customOilLiters: 0,
       followUpDiscountPercent: 100,
       sites: [
         {
@@ -159,6 +173,128 @@ describe("calculateQuote", () => {
     expect(result.recommendedOilLiters).toBe(23.5);
     expect(result.firstMonthOilAmount).toBe(1880);
   });
+
+  it("calculates a yearly quotation from monthly usage", () => {
+    const result = calculateQuote({
+      customerName: "年度客户",
+      quoteNumber: "GM-NDKH-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "",
+      deviceUnitPrice: 100,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 80,
+      quoteType: "standard",
+      usageMode: "yearly",
+      customOilLiters: 0,
+      followUpDiscountPercent: 90,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 2,
+          dailyHours: 10,
+          spraySeconds: 1,
+          pauseSeconds: 1,
+          oilMlPerHourPerDevice: 5,
+          monthlyDays: 30,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(result.monthlyTheoreticalOilLiters).toBe(1.5);
+    expect(result.totalTheoreticalOilLiters).toBe(18);
+    expect(result.recommendedOilLiters).toBe(18);
+    expect(result.firstMonthOilAmount).toBe(1440);
+    expect(result.usageUnitLabel).toBe("升/年");
+    expect(result.purchaseTotalLabel).toBe("年度采购合计");
+  });
+
+  it("uses customer specified oil liters directly", () => {
+    const result = calculateQuote({
+      customerName: "指定客户",
+      quoteNumber: "GM-ZDKH-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "",
+      deviceUnitPrice: 100,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 80,
+      quoteType: "standard",
+      usageMode: "custom",
+      customOilLiters: 12.34,
+      followUpDiscountPercent: 100,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 2,
+          dailyHours: 10,
+          spraySeconds: 1,
+          pauseSeconds: 1,
+          oilMlPerHourPerDevice: 5,
+          monthlyDays: 30,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(result.monthlyTheoreticalOilLiters).toBe(1.5);
+    expect(result.totalTheoreticalOilLiters).toBe(12.34);
+    expect(result.recommendedOilLiters).toBe(12.4);
+    expect(result.firstMonthOilAmount).toBe(992);
+    expect(result.usageBudgetLabel).toBe("客户指定用量");
+    expect(result.usageUnitLabel).toBe("升");
+  });
+
+  it("calculates an annual package quote total", () => {
+    const result = calculateQuote({
+      customerName: "包年客户",
+      quoteNumber: "GM-BNKH-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "插电款",
+      deviceUnitPrice: 196,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 100,
+      quoteType: "annualPackage",
+      usageMode: "monthly",
+      customOilLiters: 0,
+      followUpDiscountPercent: 90,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 20,
+          dailyHours: 16,
+          spraySeconds: 10,
+          pauseSeconds: 10,
+          oilMlPerHourPerDevice: 5,
+          monthlyDays: 30,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(result.usageMode).toBe("yearly");
+    expect(result.quoteTypeLabel).toBe("包年报价");
+    expect(result.totalTheoreticalOilLiters).toBe(288);
+    expect(result.recommendedOilLiters).toBe(288);
+    expect(result.firstMonthOilAmount).toBe(28800);
+    expect(result.firstPurchaseTotal).toBe(32720);
+    expect(result.purchaseTotalLabel).toBe("包年报价总价");
+    expect(result.showFollowUpOilFee).toBe(false);
+  });
 });
 
 describe("validateQuoteInput", () => {
@@ -175,6 +311,9 @@ describe("validateQuoteInput", () => {
       oilName: "",
       oilDescription: "",
       oilUnitPrice: -2,
+      quoteType: "standard",
+      usageMode: "monthly",
+      customOilLiters: 0,
       followUpDiscountPercent: 101,
       sites: [
         {
@@ -201,5 +340,40 @@ describe("validateQuoteInput", () => {
     expect(errors).toContain("喷香时间和停机时间不能同时为 0");
     expect(errors).toContain("持续喷香耗油量不能小于 0");
     expect(errors).toContain("总设备台数必须大于 0");
+  });
+
+  it("requires positive customer specified oil liters in custom mode", () => {
+    const errors = validateQuoteInput({
+      customerName: "测试客户",
+      quoteNumber: "GM-CSKH-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "",
+      deviceUnitPrice: 100,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 80,
+      quoteType: "standard",
+      usageMode: "custom",
+      customOilLiters: 0,
+      followUpDiscountPercent: 100,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 1,
+          dailyHours: 10,
+          spraySeconds: 1,
+          pauseSeconds: 1,
+          oilMlPerHourPerDevice: 5,
+          monthlyDays: 30,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(errors).toContain("客户指定用量必须大于 0");
   });
 });

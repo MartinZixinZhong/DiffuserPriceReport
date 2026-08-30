@@ -3,6 +3,26 @@ import type { QuoteResult } from "../domain/quote";
 
 export function buildExcelRows(result: QuoteResult) {
   const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
+  const measuredOilLiters = result.totalTheoreticalOilLiters.toFixed(3);
+  const monthlyOilLiters = result.monthlyTheoreticalOilLiters.toFixed(3);
+  const purchaseRemark =
+    result.quoteType === "annualPackage"
+      ? "扩香机 + 包年精油"
+      : result.usageMode === "custom"
+      ? "设备 + 客户指定精油"
+      : `设备 + 建议${result.usageLabel}精油`;
+  const siteSummaryRemark =
+    result.quoteType === "annualPackage"
+      ? `包年建议按约${recommendedOilLiters}${result.usageUnitLabel}采购`
+      : result.usageMode === "custom"
+      ? `客户指定用量约${recommendedOilLiters}L`
+      : `建议按约${recommendedOilLiters}${result.usageUnitLabel}采购`;
+  const usageNote =
+    result.usageMode === "yearly"
+      ? `2. 年度采购建议按月度理论耗量乘以 12 后向上取整至小数点后一位：${monthlyOilLiters}L/月 × 12 = ${measuredOilLiters}L/年 -> ${recommendedOilLiters}L/年。`
+      : result.usageMode === "custom"
+        ? `2. 本报价按客户指定用量计算，并向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`
+        : `2. 月度采购建议按理论耗量向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
 
   return {
     meta: [
@@ -18,8 +38,9 @@ export function buildExcelRows(result: QuoteResult) {
         "香型",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`
       ],
-      ["报价编号", result.quoteNumber, "月度精油预算", `约${recommendedOilLiters}升/月`],
-      ["报价日期", result.quoteDate, "报价有效期", result.validity]
+      ["报价编号", result.quoteNumber, result.usageBudgetLabel, `约${recommendedOilLiters}${result.usageUnitLabel}`],
+      ["报价日期", result.quoteDate, "报价有效期", result.validity],
+      ["报价类型", result.quoteTypeLabel, "", ""]
     ],
     quoteLines: [
       ["序号", "产品 / 服务", "规格 / 香型", "单位", "数量", "单价（元）", "金额（元）", "说明"],
@@ -37,23 +58,27 @@ export function buildExcelRows(result: QuoteResult) {
         2,
         "香薰精油",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
-        "升/月",
+        result.usageUnitLabel,
         recommendedOilLiters,
         result.oilUnitPrice,
         result.firstMonthOilAmount,
-        "建议月度采购量"
+        result.usageMode === "custom" ? "客户指定采购量" : `建议${result.usageLabel}采购量`
       ],
-      ["", "采购合计", "", "", "", "", result.firstPurchaseTotal, "设备 + 首月建议精油"],
-      [
-        "",
-        "后续月度精油费用",
-        "",
-        "",
-        "",
-        "",
-        result.followUpMonthlyOilFee,
-        `按${result.followUpDiscountPercent}%折扣计算`
-      ]
+      ["", result.purchaseTotalLabel, "", "", "", "", result.firstPurchaseTotal, purchaseRemark],
+      ...(result.showFollowUpOilFee
+        ? [
+            [
+              "",
+              result.followUpOilFeeLabel,
+              "",
+              "",
+              "",
+              "",
+              result.followUpMonthlyOilFee,
+              `按${result.followUpDiscountPercent}%折扣计算`
+            ]
+          ]
+        : [])
     ],
     siteRows: [
       [
@@ -82,17 +107,15 @@ export function buildExcelRows(result: QuoteResult) {
         "",
         "",
         "",
-        result.totalTheoreticalOilLiters,
+        result.monthlyTheoreticalOilLiters,
         result.deviceAmount,
-        `建议按约${recommendedOilLiters}L/月采购`
+        siteSummaryRemark
       ]
     ],
     businessNotes: [
       ["商务说明"],
       ["1. 精油理论耗量按设备台数、每日运行小时、喷停比例、持续喷香耗油量和每月运行天数测算。"],
-      [
-        `2. 月度采购建议按理论耗量向上取整至小数点后一位：${result.totalTheoreticalOilLiters}L -> ${recommendedOilLiters}L。`
-      ],
+      [usageNote],
       [
         "3. 报价币种为人民币（CNY）；税费、运输费用、安装费用、付款方式及交货周期请以双方最终确认的销售合同为准。"
       ],
@@ -100,7 +123,8 @@ export function buildExcelRows(result: QuoteResult) {
     ],
     summary: {
       firstPurchaseTotal: result.firstPurchaseTotal,
-      followUpMonthlyOilFee: result.followUpMonthlyOilFee
+      followUpMonthlyOilFee: result.followUpMonthlyOilFee,
+      showFollowUpOilFee: result.showFollowUpOilFee
     }
   };
 }

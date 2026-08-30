@@ -6,6 +6,14 @@ export type PdfModel = ReturnType<typeof buildPdfModel>;
 
 export function buildPdfModel(result: QuoteResult) {
   const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
+  const measuredOilLiters = result.totalTheoreticalOilLiters.toFixed(3);
+  const monthlyOilLiters = result.monthlyTheoreticalOilLiters.toFixed(3);
+  const usageNote =
+    result.usageMode === "yearly"
+      ? `年度采购建议按月度理论耗量乘以 12 后向上取整至小数点后一位：${monthlyOilLiters}L/月 × 12 = ${measuredOilLiters}L/年 -> ${recommendedOilLiters}L/年。`
+      : result.usageMode === "custom"
+        ? `本报价按客户指定用量计算，并向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`
+        : `月度采购建议按理论耗量向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
 
   return {
     title: "GlassMartin 商用香薰系统报价单",
@@ -26,7 +34,7 @@ export function buildPdfModel(result: QuoteResult) {
       {
         product: "香薰精油",
         spec: `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
-        quantity: `${recommendedOilLiters} 升/月`,
+        quantity: `${recommendedOilLiters} ${result.usageUnitLabel}`,
         unitPrice: `${result.oilUnitPrice.toFixed(2)} 元`,
         amount: `${result.firstMonthOilAmount.toFixed(2)} 元`
       }
@@ -43,10 +51,19 @@ export function buildPdfModel(result: QuoteResult) {
     summary: {
       totalDeviceQuantity: result.totalDeviceQuantity,
       totalTheoreticalOilLiters: result.totalTheoreticalOilLiters,
+      monthlyTheoreticalOilLiters: result.monthlyTheoreticalOilLiters,
       recommendedOilLiters,
       firstPurchaseTotal: result.firstPurchaseTotal,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
-      followUpDiscountPercent: result.followUpDiscountPercent
+      followUpDiscountPercent: result.followUpDiscountPercent,
+      quoteTypeLabel: result.quoteTypeLabel,
+      usageBudgetLabel: result.usageBudgetLabel,
+      usageUnitLabel: result.usageUnitLabel,
+      oilAmountLabel: result.oilAmountLabel,
+      purchaseTotalLabel: result.purchaseTotalLabel,
+      followUpOilFeeLabel: result.followUpOilFeeLabel,
+      showFollowUpOilFee: result.showFollowUpOilFee,
+      usageNote
     }
   };
 }
@@ -87,6 +104,9 @@ export function buildPdfHtml(model: PdfModel): string {
         </tr>`
     )
     .join("");
+  const followUpSummary = model.summary.showFollowUpOilFee
+    ? `<div><span>${escapeHtml(model.summary.followUpOilFeeLabel)}（${escapeHtml(model.summary.followUpDiscountPercent)}%）</span><strong>${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元</strong></div>`
+    : "";
 
   return `
     <article class="pdf-page">
@@ -171,7 +191,8 @@ export function buildPdfHtml(model: PdfModel): string {
         <div><strong>报价日期：</strong>${escapeHtml(model.quoteDate)}</div>
         <div><strong>有效期：</strong>${escapeHtml(model.validity)}</div>
         <div><strong>报价单位：</strong>${escapeHtml(model.quoteCompany)}</div>
-        <div><strong>月度精油预算：</strong>约${escapeHtml(model.summary.recommendedOilLiters)}升/月</div>
+        <div><strong>报价类型：</strong>${escapeHtml(model.summary.quoteTypeLabel)}</div>
+        <div><strong>${escapeHtml(model.summary.usageBudgetLabel)}：</strong>约${escapeHtml(model.summary.recommendedOilLiters)}${escapeHtml(model.summary.usageUnitLabel)}</div>
       </section>
       <h2 class="pdf-section-title">一、报价明细</h2>
       <table class="pdf-table">
@@ -181,8 +202,8 @@ export function buildPdfHtml(model: PdfModel): string {
         <tbody>${quoteRows}</tbody>
       </table>
       <section class="pdf-summary">
-        <div><span>首月采购合计</span><strong>${escapeHtml(model.summary.firstPurchaseTotal.toFixed(2))} 元</strong></div>
-        <div><span>后续月度精油费用（${escapeHtml(model.summary.followUpDiscountPercent)}%）</span><strong>${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元</strong></div>
+        <div><span>${escapeHtml(model.summary.purchaseTotalLabel)}</span><strong>${escapeHtml(model.summary.firstPurchaseTotal.toFixed(2))} 元</strong></div>
+        ${followUpSummary}
       </section>
       <h2 class="pdf-section-title">二、项目配置与用量摘要</h2>
       <table class="pdf-table">
@@ -193,7 +214,7 @@ export function buildPdfHtml(model: PdfModel): string {
       </table>
       <ol class="pdf-notes">
         <li>精油理论耗量按设备台数、每日运行小时、喷停比例、持续喷香耗油量和每月运行天数测算。</li>
-        <li>月度采购建议按理论耗量向上取整至小数点后一位：${escapeHtml(model.summary.totalTheoreticalOilLiters)}L -> ${escapeHtml(model.summary.recommendedOilLiters)}L。</li>
+        <li>${escapeHtml(model.summary.usageNote)}</li>
         <li>报价币种为人民币（CNY）；税费、运输费用、安装费用、付款方式及交货周期请以双方最终确认的销售合同为准。</li>
         <li>GlassMartin 可提供设备参数设置、香氛使用建议及后续补充采购支持。</li>
       </ol>

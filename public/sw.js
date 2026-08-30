@@ -1,4 +1,4 @@
-const CACHE_NAME = "glassmartin-quote-pwa-v4";
+const CACHE_NAME = "glassmartin-quote-pwa-v5";
 const CORE_ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./app-icon.png"];
 
 self.addEventListener("install", (event) => {

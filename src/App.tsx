@@ -19,6 +19,9 @@ const initialQuote: QuoteInput = {
   oilName: "",
   oilDescription: "",
   oilUnitPrice: 0,
+  quoteType: "standard",
+  usageMode: "monthly",
+  customOilLiters: 0,
   followUpDiscountPercent: 90,
   sites: [
     {
@@ -61,6 +64,14 @@ export default function App() {
       ...current,
       quoteDate,
       quoteNumber: generateQuoteNumber(current.customerName, quoteDate)
+    }));
+  };
+
+  const updateQuoteType = (quoteType: QuoteInput["quoteType"]) => {
+    setQuote((current) => ({
+      ...current,
+      quoteType,
+      usageMode: quoteType === "annualPackage" ? "yearly" : current.usageMode
     }));
   };
 
@@ -113,7 +124,7 @@ export default function App() {
       <section className="header">
         <p className="eyebrow">GlassMartin 香薰工厂</p>
         <h1>报价生成器</h1>
-        <p>输入客户、设备、精油和喷香参数，自动计算用量与金额，并生成 Excel/PDF。</p>
+        <p>输入客户、设备、精油和用量方式，自动计算金额，并生成 Excel/PDF。</p>
       </section>
 
       <section className="panel">
@@ -177,15 +188,51 @@ export default function App() {
           />
         </label>
         <label>
-          后续月度折扣（%）
-          <input
-            max="100"
-            min="0"
-            type="number"
-            value={quote.followUpDiscountPercent}
-            onChange={(event) => updateQuote("followUpDiscountPercent", numberValue(event.target.value))}
-          />
+          报价类型
+          <select
+            value={quote.quoteType}
+            onChange={(event) => updateQuoteType(event.target.value as QuoteInput["quoteType"])}
+          >
+            <option value="standard">标准采购报价</option>
+            <option value="annualPackage">包年报价</option>
+          </select>
         </label>
+        <label>
+          用量报价方式
+          <select
+            disabled={quote.quoteType === "annualPackage"}
+            value={quote.usageMode}
+            onChange={(event) => updateQuote("usageMode", event.target.value as QuoteInput["usageMode"])}
+          >
+            <option value="monthly">按月测算</option>
+            <option value="yearly">按年测算</option>
+            <option value="custom">客户指定用量</option>
+          </select>
+        </label>
+        {quote.usageMode === "custom" && (
+          <label>
+            客户指定用量（升）
+            <input
+              min="0"
+              step="0.1"
+              type="number"
+              value={quote.customOilLiters}
+              onChange={(event) => updateQuote("customOilLiters", numberValue(event.target.value))}
+            />
+          </label>
+        )}
+        {quote.quoteType === "standard" && (
+          <label>
+            后续折扣（%）
+            <input
+              max="100"
+              min="0"
+              type="number"
+              value={quote.followUpDiscountPercent}
+              onChange={(event) => updateQuote("followUpDiscountPercent", numberValue(event.target.value))}
+            />
+          </label>
+        )}
       </section>
 
       <section className="panel">
@@ -290,29 +337,37 @@ export default function App() {
               <dd>{result.totalDeviceQuantity} 台</dd>
             </div>
             <div>
-              <dt>理论月耗油量</dt>
+              <dt>报价类型</dt>
+              <dd>{result.quoteTypeLabel}</dd>
+            </div>
+            <div>
+              <dt>{result.usageMode === "custom" ? "客户指定用量" : `${result.usageLabel}理论耗油量`}</dt>
               <dd>{result.totalTheoreticalOilLiters} L</dd>
             </div>
             <div>
               <dt>建议采购量</dt>
-              <dd>{result.recommendedOilLiters.toFixed(1)} L</dd>
+              <dd>
+                {result.recommendedOilLiters.toFixed(1)} {result.usageUnitLabel}
+              </dd>
             </div>
             <div>
               <dt>设备金额</dt>
               <dd>{result.deviceAmount.toFixed(2)} 元</dd>
             </div>
             <div>
-              <dt>首月精油金额</dt>
+              <dt>{result.oilAmountLabel}</dt>
               <dd>{result.firstMonthOilAmount.toFixed(2)} 元</dd>
             </div>
             <div>
-              <dt>首月采购合计</dt>
+              <dt>{result.purchaseTotalLabel}</dt>
               <dd>{result.firstPurchaseTotal.toFixed(2)} 元</dd>
             </div>
-            <div>
-              <dt>后续月度精油费用</dt>
-              <dd>{result.followUpMonthlyOilFee.toFixed(2)} 元</dd>
-            </div>
+            {result.showFollowUpOilFee && (
+              <div>
+                <dt>{result.followUpOilFeeLabel}</dt>
+                <dd>{result.followUpMonthlyOilFee.toFixed(2)} 元</dd>
+              </div>
+            )}
           </dl>
         )}
         <div className="actions">
