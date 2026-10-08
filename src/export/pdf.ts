@@ -26,18 +26,22 @@ export function buildPdfModel(result: QuoteResult) {
     validity: result.validity,
     quoteCompany: result.quoteCompany,
     lines: [
-      {
-        product: "香薰扩香机",
-        spec: `${result.deviceModel}${result.deviceRemark ? `（${result.deviceRemark}）` : ""}`,
-        quantity: `${result.totalDeviceQuantity} 台`,
-        unitPrice: `${result.deviceUnitPrice.toFixed(2)} 元`,
-        amount: `${result.deviceAmount.toFixed(2)} 元`
-      },
+      ...(result.includeDevices
+        ? [
+            {
+              product: "香薰扩香机",
+              spec: `${result.deviceModel}${result.deviceRemark ? `（${result.deviceRemark}）` : ""}`,
+              quantity: `${result.totalDeviceQuantity} 台`,
+              unitPrice: `${result.deviceUnitPrice.toFixed(2)} 元`,
+              amount: `${result.deviceAmount.toFixed(2)} 元`
+            }
+          ]
+        : []),
       {
         product: "香薰精油",
         spec: `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
-        quantity: `${recommendedOilLiters} ${result.usageUnitLabel}`,
-        unitPrice: `${result.oilUnitPrice.toFixed(2)} 元`,
+        quantity: `${result.oilSaleQuantity.toFixed(1)} ${result.oilSaleUnitLabel}`,
+        unitPrice: `${result.oilUnitPrice.toFixed(2)} ${result.oilPriceUnitLabel}`,
         amount: `${result.firstMonthOilAmount.toFixed(2)} 元`
       }
     ],
@@ -52,11 +56,17 @@ export function buildPdfModel(result: QuoteResult) {
     })),
     summary: {
       totalDeviceQuantity: result.totalDeviceQuantity,
+      includeDevices: result.includeDevices,
+      showSiteConfig: result.showSiteConfig,
       totalTheoreticalOilLiters: result.totalTheoreticalOilLiters,
       monthlyTheoreticalOilLiters: result.monthlyTheoreticalOilLiters,
       recommendedOilLiters,
+      oilSaleQuantity: result.oilSaleQuantity,
+      oilSaleUnitLabel: result.oilSaleUnitLabel,
+      oilPriceUnitLabel: result.oilPriceUnitLabel,
       firstPurchaseTotal: result.firstPurchaseTotal,
       followUpOilUnitPrice: result.followUpOilUnitPrice,
+      followUpOilUnitPricePerLiter: result.followUpOilUnitPricePerLiter,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
       followUpDiscountPercent: result.followUpDiscountPercent,
       followUpQuantityLabel,
@@ -165,8 +175,17 @@ export function buildPdfHtml(model: PdfModel): string {
     ? `<div class="pdf-follow-up-total">
           <span>后续精油采购（${escapeHtml(model.summary.followUpDiscountPercent)}%折扣）</span>
           <strong>${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元</strong>
-          <p>折后单价：${escapeHtml(model.summary.followUpOilUnitPrice.toFixed(2))} 元/L；${escapeHtml(model.summary.followUpQuantityLabel)} ${escapeHtml(model.summary.recommendedOilLiters)}${escapeHtml(model.summary.usageUnitLabel)}，后续采购精油总价：${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元。</p>
+          <p>折后单价：${escapeHtml(model.summary.followUpOilUnitPrice.toFixed(2))} ${escapeHtml(model.summary.oilPriceUnitLabel)}；${escapeHtml(model.summary.followUpQuantityLabel)} ${escapeHtml(model.summary.oilSaleQuantity.toFixed(1))}${escapeHtml(model.summary.oilSaleUnitLabel)}，后续采购精油总价：${escapeHtml(model.summary.followUpMonthlyOilFee.toFixed(2))} 元。</p>
         </div>`
+    : "";
+  const siteConfigSection = model.summary.showSiteConfig
+    ? `<h2 class="pdf-section-title">二、项目配置与用量摘要</h2>
+      <table class="pdf-table">
+        <thead>
+          <tr><th>场地</th><th>设备数量</th><th>每日运行</th><th>喷停设置</th><th>有效比例</th><th>理论月耗油</th></tr>
+        </thead>
+        <tbody>${siteRows}</tbody>
+      </table>`
     : "";
 
   return `
@@ -288,13 +307,7 @@ export function buildPdfHtml(model: PdfModel): string {
         <div class="pdf-total-primary"><span>${escapeHtml(model.summary.purchaseTotalLabel)}</span><strong>${escapeHtml(model.summary.firstPurchaseTotal.toFixed(2))} 元</strong></div>
         ${followUpSummary}
       </section>
-      <h2 class="pdf-section-title">二、项目配置与用量摘要</h2>
-      <table class="pdf-table">
-        <thead>
-          <tr><th>场地</th><th>设备数量</th><th>每日运行</th><th>喷停设置</th><th>有效比例</th><th>理论月耗油</th></tr>
-        </thead>
-        <tbody>${siteRows}</tbody>
-      </table>
+      ${siteConfigSection}
       <ol class="pdf-notes">
         <li>精油理论耗量按设备台数、每日运行小时、喷停比例、持续喷香耗油量和每月运行天数测算。</li>
         <li>${escapeHtml(model.summary.usageNote)}</li>

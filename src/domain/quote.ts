@@ -12,6 +12,7 @@ export type QuoteSiteInput = {
 
 export type QuoteUsageMode = "monthly" | "yearly" | "custom";
 export type QuoteType = "standard" | "annualPackage";
+export type OilPriceUnit = "liter" | "halfLiter";
 
 export type QuoteInput = {
   customerName: string;
@@ -25,9 +26,13 @@ export type QuoteInput = {
   oilName: string;
   oilDescription: string;
   oilUnitPrice: number;
+  oilPriceUnit: OilPriceUnit;
   quoteType: QuoteType;
   usageMode: QuoteUsageMode;
   customOilLiters: number;
+  includeDevices: boolean;
+  showSiteConfig: boolean;
+  showFollowUpPurchase: boolean;
   followUpDiscountPercent: number;
   sites: QuoteSiteInput[];
 };
@@ -45,10 +50,15 @@ export type QuoteResult = Omit<QuoteInput, "sites"> & {
   monthlyTheoreticalOilLiters: number;
   totalTheoreticalOilLiters: number;
   recommendedOilLiters: number;
+  oilUnitPricePerLiter: number;
+  oilSaleQuantity: number;
+  oilSaleUnitLabel: string;
+  oilPriceUnitLabel: string;
   deviceAmount: number;
   firstMonthOilAmount: number;
   firstPurchaseTotal: number;
   followUpOilUnitPrice: number;
+  followUpOilUnitPricePerLiter: number;
   followUpMonthlyOilFee: number;
   usageLabel: string;
   usageUnitLabel: string;
@@ -63,6 +73,7 @@ export type QuoteResult = Omit<QuoteInput, "sites"> & {
 const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const roundLiters = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
 const ceilLitersToOneDecimal = (value: number) => Math.ceil(value * 10 - Number.EPSILON) / 10;
+const roundQuantity = (value: number) => Math.round((value + Number.EPSILON) * 10) / 10;
 
 const usageLabels: Record<
   QuoteUsageMode,
@@ -112,6 +123,7 @@ const usageLabels: Record<
 
 export function calculateQuote(input: QuoteInput): QuoteResult {
   const usageMode = input.quoteType === "annualPackage" ? "yearly" : input.usageMode;
+  const priceUnitLiters = input.oilPriceUnit === "halfLiter" ? 0.5 : 1;
   const sites = input.sites.map((site) => {
     const effectiveSprayRatio = site.spraySeconds / (site.spraySeconds + site.pauseSeconds);
     const effectiveDailyHours = site.dailyHours * effectiveSprayRatio;
@@ -129,7 +141,9 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
       effectiveSprayRatio,
       effectiveDailyHours,
       theoreticalOilLiters,
-      deviceAmount: roundCurrency(site.deviceQuantity * input.deviceUnitPrice)
+      deviceAmount: input.includeDevices
+        ? roundCurrency(site.deviceQuantity * input.deviceUnitPrice)
+        : 0
     };
   });
 
@@ -144,13 +158,31 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
         ? roundLiters(input.customOilLiters)
         : monthlyTheoreticalOilLiters;
   const recommendedOilLiters = ceilLitersToOneDecimal(totalTheoreticalOilLiters);
-  const deviceAmount = roundCurrency(totalDeviceQuantity * input.deviceUnitPrice);
-  const firstMonthOilAmount = roundCurrency(recommendedOilLiters * input.oilUnitPrice);
+  const oilUnitPricePerLiter = roundCurrency(input.oilUnitPrice / priceUnitLiters);
+  const oilSaleQuantity = roundQuantity(recommendedOilLiters / priceUnitLiters);
+  const oilSaleUnitLabel =
+    input.oilPriceUnit === "halfLiter"
+      ? usageMode === "monthly"
+        ? "500ml/月"
+        : usageMode === "yearly"
+          ? "500ml/年"
+          : "500ml"
+      : input.quoteType === "annualPackage"
+        ? "升/年"
+        : usageLabels[usageMode].usageUnitLabel;
+  const oilPriceUnitLabel = input.oilPriceUnit === "halfLiter" ? "元/500ml" : "元/L";
+  const deviceAmount = input.includeDevices
+    ? roundCurrency(totalDeviceQuantity * input.deviceUnitPrice)
+    : 0;
+  const firstMonthOilAmount = roundCurrency(oilSaleQuantity * input.oilUnitPrice);
   const firstPurchaseTotal = roundCurrency(deviceAmount + firstMonthOilAmount);
   const followUpOilUnitPrice = roundCurrency(
     input.oilUnitPrice * (input.followUpDiscountPercent / 100)
   );
-  const followUpMonthlyOilFee = roundCurrency(recommendedOilLiters * followUpOilUnitPrice);
+  const followUpOilUnitPricePerLiter = roundCurrency(
+    oilUnitPricePerLiter * (input.followUpDiscountPercent / 100)
+  );
+  const followUpMonthlyOilFee = roundCurrency(oilSaleQuantity * followUpOilUnitPrice);
 
   const labels =
     input.quoteType === "annualPackage"
@@ -161,7 +193,10 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
           purchaseTotalLabel: "包年报价总价",
           showFollowUpOilFee: false
         }
-      : usageLabels[usageMode];
+      : {
+          ...usageLabels[usageMode],
+          showFollowUpOilFee: input.showFollowUpPurchase
+        };
 
   return {
     ...input,
@@ -171,10 +206,15 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
     monthlyTheoreticalOilLiters,
     totalTheoreticalOilLiters,
     recommendedOilLiters,
+    oilUnitPricePerLiter,
+    oilSaleQuantity,
+    oilSaleUnitLabel,
+    oilPriceUnitLabel,
     deviceAmount,
     firstMonthOilAmount,
     firstPurchaseTotal,
     followUpOilUnitPrice,
+    followUpOilUnitPricePerLiter,
     followUpMonthlyOilFee,
     ...labels
   };

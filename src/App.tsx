@@ -19,9 +19,13 @@ const initialQuote: QuoteInput = {
   oilName: "",
   oilDescription: "",
   oilUnitPrice: 0,
+  oilPriceUnit: "liter",
   quoteType: "standard",
   usageMode: "monthly",
   customOilLiters: 0,
+  includeDevices: true,
+  showSiteConfig: true,
+  showFollowUpPurchase: true,
   followUpDiscountPercent: 90,
   sites: [
     {
@@ -179,7 +183,17 @@ export default function App() {
           <textarea value={quote.oilDescription} onChange={(event) => updateQuote("oilDescription", event.target.value)} />
         </label>
         <label>
-          精油单价（元/升）
+          精油计价单位
+          <select
+            value={quote.oilPriceUnit}
+            onChange={(event) => updateQuote("oilPriceUnit", event.target.value as QuoteInput["oilPriceUnit"])}
+          >
+            <option value="liter">每 L（升）的单价</option>
+            <option value="halfLiter">每 500ml（毫升）的单价</option>
+          </select>
+        </label>
+        <label>
+          精油单价（{quote.oilPriceUnit === "halfLiter" ? "元/500ml" : "元/L"}）
           <input
             min="0"
             type="number"
@@ -197,6 +211,32 @@ export default function App() {
             <option value="annualPackage">包年报价</option>
           </select>
         </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={quote.includeDevices}
+            onChange={(event) => updateQuote("includeDevices", event.target.checked)}
+          />
+          报价包含扩香机
+        </label>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={quote.showSiteConfig}
+            onChange={(event) => updateQuote("showSiteConfig", event.target.checked)}
+          />
+          报价单显示场地配置
+        </label>
+        {quote.quoteType === "standard" && (
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={quote.showFollowUpPurchase}
+              onChange={(event) => updateQuote("showFollowUpPurchase", event.target.checked)}
+            />
+            显示后续精油采购
+          </label>
+        )}
         <label>
           用量报价方式
           <select
@@ -332,10 +372,12 @@ export default function App() {
         )}
         {result && (
           <dl className="summary">
-            <div>
-              <dt>设备总数</dt>
-              <dd>{result.totalDeviceQuantity} 台</dd>
-            </div>
+            {result.includeDevices && (
+              <div>
+                <dt>设备总数</dt>
+                <dd>{result.totalDeviceQuantity} 台</dd>
+              </div>
+            )}
             <div>
               <dt>报价类型</dt>
               <dd>{result.quoteTypeLabel}</dd>
@@ -350,13 +392,24 @@ export default function App() {
                 {result.recommendedOilLiters.toFixed(1)} {result.usageUnitLabel}
               </dd>
             </div>
+            {result.includeDevices && (
+              <div>
+                <dt>设备金额</dt>
+                <dd>{result.deviceAmount.toFixed(2)} 元</dd>
+              </div>
+            )}
             <div>
-              <dt>设备金额</dt>
-              <dd>{result.deviceAmount.toFixed(2)} 元</dd>
+              <dt>精油计价</dt>
+              <dd>
+                {result.oilUnitPrice.toFixed(2)} {result.oilPriceUnitLabel}
+              </dd>
             </div>
             <div>
               <dt>{result.oilAmountLabel}</dt>
-              <dd>{result.firstMonthOilAmount.toFixed(2)} 元</dd>
+              <dd>
+                {result.oilSaleQuantity.toFixed(1)} {result.oilSaleUnitLabel} ·{" "}
+                {result.firstMonthOilAmount.toFixed(2)} 元
+              </dd>
             </div>
             <div className="summary-primary">
               <dt>{result.purchaseTotalLabel}</dt>
@@ -366,7 +419,8 @@ export default function App() {
               <div className="summary-follow-up">
                 <dt>{result.followUpOilFeeLabel}</dt>
                 <dd>
-                  {result.followUpOilUnitPrice.toFixed(2)} 元/L · {result.followUpMonthlyOilFee.toFixed(2)} 元
+                  {result.followUpOilUnitPrice.toFixed(2)} {result.oilPriceUnitLabel} ·{" "}
+                  {result.followUpMonthlyOilFee.toFixed(2)} 元
                 </dd>
               </div>
             )}

@@ -15,9 +15,13 @@ describe("calculateQuote", () => {
       oilName: "至尊白茶",
       oilDescription: "50%含量，日本出光Isododecane挥发溶剂载体",
       oilUnitPrice: 123.3,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 90,
       sites: [
         {
@@ -61,9 +65,13 @@ describe("calculateQuote", () => {
       oilName: "白茶",
       oilDescription: "",
       oilUnitPrice: 100,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 85,
       sites: [
         {
@@ -114,9 +122,13 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 100,
       sites: [
         {
@@ -151,9 +163,13 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 100,
       sites: [
         {
@@ -188,9 +204,13 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "yearly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 90,
       sites: [
         {
@@ -228,9 +248,13 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "custom",
       customOilLiters: 12.34,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 100,
       sites: [
         {
@@ -255,6 +279,53 @@ describe("calculateQuote", () => {
     expect(result.usageUnitLabel).toBe("升");
   });
 
+  it("calculates oil amount from 500ml unit price", () => {
+    const result = calculateQuote({
+      customerName: "500ml客户",
+      quoteNumber: "GM-500ML-20260629",
+      quoteDate: "2026-06-29",
+      validity: "15日内-因原料价格波动",
+      quoteCompany: "GlassMartin 香薰工厂",
+      deviceModel: "GAS-501F",
+      deviceRemark: "",
+      deviceUnitPrice: 100,
+      oilName: "测试精油",
+      oilDescription: "",
+      oilUnitPrice: 412,
+      oilPriceUnit: "halfLiter",
+      quoteType: "standard",
+      usageMode: "custom",
+      customOilLiters: 5,
+      includeDevices: false,
+      showSiteConfig: false,
+      showFollowUpPurchase: true,
+      followUpDiscountPercent: 80,
+      sites: [
+        {
+          id: "site-1",
+          name: "场地",
+          deviceQuantity: 1,
+          dailyHours: 10,
+          spraySeconds: 1,
+          pauseSeconds: 1,
+          oilMlPerHourPerDevice: 5,
+          monthlyDays: 30,
+          remark: ""
+        }
+      ]
+    });
+
+    expect(result.recommendedOilLiters).toBe(5);
+    expect(result.oilSaleQuantity).toBe(10);
+    expect(result.oilSaleUnitLabel).toBe("500ml");
+    expect(result.oilUnitPricePerLiter).toBe(824);
+    expect(result.firstMonthOilAmount).toBe(4120);
+    expect(result.firstPurchaseTotal).toBe(4120);
+    expect(result.followUpOilUnitPrice).toBe(329.6);
+    expect(result.followUpOilUnitPricePerLiter).toBe(659.2);
+    expect(result.followUpMonthlyOilFee).toBe(3296);
+  });
+
   it("calculates an annual package quote total", () => {
     const result = calculateQuote({
       customerName: "包年客户",
@@ -268,9 +339,13 @@ describe("calculateQuote", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 100,
+      oilPriceUnit: "liter",
       quoteType: "annualPackage",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 90,
       sites: [
         {
@@ -312,9 +387,13 @@ describe("validateQuoteInput", () => {
       oilName: "",
       oilDescription: "",
       oilUnitPrice: -2,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "monthly",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 101,
       sites: [
         {
@@ -356,9 +435,13 @@ describe("validateQuoteInput", () => {
       oilName: "测试精油",
       oilDescription: "",
       oilUnitPrice: 80,
+      oilPriceUnit: "liter",
       quoteType: "standard",
       usageMode: "custom",
       customOilLiters: 0,
+      includeDevices: true,
+      showSiteConfig: true,
+      showFollowUpPurchase: true,
       followUpDiscountPercent: 100,
       sites: [
         {

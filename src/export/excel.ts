@@ -30,7 +30,9 @@ export function buildExcelRows(result: QuoteResult) {
         "报价对象",
         result.customerName,
         "需求概况",
-        `${result.deviceModel} 共${result.totalDeviceQuantity}台 ${result.deviceRemark}`.trim()
+        result.includeDevices
+          ? `${result.deviceModel} 共${result.totalDeviceQuantity}台 ${result.deviceRemark}`.trim()
+          : "不包含扩香机"
       ],
       [
         "报价单位",
@@ -44,25 +46,31 @@ export function buildExcelRows(result: QuoteResult) {
     ],
     quoteLines: [
       ["序号", "产品 / 服务", "规格 / 香型", "单位", "数量", "单价（元）", "金额（元）", "说明"],
+      ...(result.includeDevices
+        ? [
+            [
+              1,
+              "香薰扩香机",
+              `${result.deviceModel}${result.deviceRemark ? `（${result.deviceRemark}）` : ""}`,
+              "台",
+              result.totalDeviceQuantity,
+              result.deviceUnitPrice,
+              result.deviceAmount,
+              "一次性设备采购"
+            ]
+          ]
+        : []),
       [
-        1,
-        "香薰扩香机",
-        `${result.deviceModel}${result.deviceRemark ? `（${result.deviceRemark}）` : ""}`,
-        "台",
-        result.totalDeviceQuantity,
-        result.deviceUnitPrice,
-        result.deviceAmount,
-        "一次性设备采购"
-      ],
-      [
-        2,
+        result.includeDevices ? 2 : 1,
         "香薰精油",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`,
-        result.usageUnitLabel,
-        recommendedOilLiters,
+        result.oilSaleUnitLabel,
+        result.oilSaleQuantity.toFixed(1),
         result.oilUnitPrice,
         result.firstMonthOilAmount,
-        result.usageMode === "custom" ? "客户指定采购量" : `建议${result.usageLabel}采购量`
+        result.usageMode === "custom"
+          ? "客户指定采购量"
+          : `建议${result.usageLabel}采购量（${recommendedOilLiters}${result.usageUnitLabel}）`
       ],
       ["", result.purchaseTotalLabel, "", "", "", "", result.firstPurchaseTotal, purchaseRemark],
       ...(result.showFollowUpOilFee
@@ -72,10 +80,10 @@ export function buildExcelRows(result: QuoteResult) {
               result.followUpOilFeeLabel,
               "",
               "",
-              recommendedOilLiters,
+              result.oilSaleQuantity.toFixed(1),
               result.followUpOilUnitPrice,
               result.followUpMonthlyOilFee,
-              `后续补充采购按${result.followUpDiscountPercent}%折扣计算，折后单价 ${result.followUpOilUnitPrice.toFixed(2)} 元/L`
+              `后续补充采购按${result.followUpDiscountPercent}%折扣计算，折后单价 ${result.followUpOilUnitPrice.toFixed(2)} ${result.oilPriceUnitLabel}`
             ]
           ]
         : [])
@@ -124,6 +132,7 @@ export function buildExcelRows(result: QuoteResult) {
     summary: {
       firstPurchaseTotal: result.firstPurchaseTotal,
       followUpOilUnitPrice: result.followUpOilUnitPrice,
+      followUpOilUnitPricePerLiter: result.followUpOilUnitPricePerLiter,
       followUpMonthlyOilFee: result.followUpMonthlyOilFee,
       showFollowUpOilFee: result.showFollowUpOilFee
     }
@@ -140,9 +149,13 @@ export function createExcelBlob(result: QuoteResult): Blob {
     [],
     ["一、报价明细"],
     ...rows.quoteLines,
-    [],
-    ["二、项目配置与用量摘要"],
-    ...rows.siteRows,
+    ...(result.showSiteConfig
+      ? [
+          [],
+          ["二、项目配置与用量摘要"],
+          ...rows.siteRows
+        ]
+      : []),
     [],
     ...rows.businessNotes,
     [],
@@ -164,7 +177,9 @@ export function createExcelBlob(result: QuoteResult): Blob {
   ];
 
   XLSX.utils.book_append_sheet(workbook, formalSheet, "正式报价单");
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows.siteRows), "用量测算");
+  if (result.showSiteConfig) {
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows.siteRows), "用量测算");
+  }
 
   const arrayBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   return new Blob([arrayBuffer], {

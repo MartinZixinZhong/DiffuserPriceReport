@@ -15,9 +15,13 @@ const result = calculateQuote({
   oilName: "至尊白茶",
   oilDescription: "50%含量，日本出光Isododecane挥发溶剂载体",
   oilUnitPrice: 123.3,
+  oilPriceUnit: "liter",
   quoteType: "standard",
   usageMode: "monthly",
   customOilLiters: 0,
+  includeDevices: true,
+  showSiteConfig: true,
+  showFollowUpPurchase: true,
   followUpDiscountPercent: 90,
   sites: [
     {
@@ -71,5 +75,24 @@ describe("export contract", () => {
     expect(pdfModel.summary.showFollowUpOilFee).toBe(false);
     expect(pdfModel.summary.purchaseTotalLabel).toBe("包年报价总价");
     expect(buildPdfHtml(pdfModel)).not.toContain("后续精油采购");
+  });
+
+  it("omits device and site sections when display options are disabled", () => {
+    const oilOnlyResult = calculateQuote({
+      ...result,
+      includeDevices: false,
+      showSiteConfig: false,
+      showFollowUpPurchase: false,
+      sites: result.sites
+    });
+    const excelRows = buildExcelRows(oilOnlyResult);
+    const pdfHtml = buildPdfHtml(buildPdfModel(oilOnlyResult));
+
+    expect(oilOnlyResult.deviceAmount).toBe(0);
+    expect(excelRows.quoteLines.flat()).not.toContain("香薰扩香机");
+    expect(excelRows.summary.showFollowUpOilFee).toBe(false);
+    expect(pdfHtml).not.toContain("香薰扩香机");
+    expect(pdfHtml).not.toContain("项目配置与用量摘要");
+    expect(pdfHtml).not.toContain("后续精油采购");
   });
 });
