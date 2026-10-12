@@ -5,24 +5,34 @@ export function buildExcelRows(result: QuoteResult) {
   const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
   const measuredOilLiters = result.totalTheoreticalOilLiters.toFixed(3);
   const monthlyOilLiters = result.monthlyTheoreticalOilLiters.toFixed(3);
+  const budgetText =
+    result.purchaseTotalMode === "singleBottle"
+      ? `${result.oilSaleQuantity.toFixed(0)}瓶（500ml）`
+      : `约${recommendedOilLiters}${result.usageUnitLabel}`;
   const purchaseRemark =
-    result.quoteType === "annualPackage"
+    result.purchaseTotalMode === "singleBottle"
+      ? "单瓶 500ml 精油"
+      : result.quoteType === "annualPackage"
       ? "扩香机 + 包年精油"
       : result.usageMode === "custom"
       ? "设备 + 客户指定精油"
       : `设备 + 建议${result.usageLabel}精油`;
   const siteSummaryRemark =
-    result.quoteType === "annualPackage"
+    result.purchaseTotalMode === "singleBottle"
+      ? "按单瓶 500ml 报价，客户可按需采购"
+      : result.quoteType === "annualPackage"
       ? `包年建议按约${recommendedOilLiters}${result.usageUnitLabel}采购`
       : result.usageMode === "custom"
       ? `客户指定用量约${recommendedOilLiters}L`
       : `建议按约${recommendedOilLiters}${result.usageUnitLabel}采购`;
   const usageNote =
-    result.usageMode === "yearly"
+    result.purchaseTotalMode === "singleBottle"
+      ? "2. 本报价按单瓶 500ml 精油采购展示，客户可按实际需要增加采购瓶数。"
+      : result.usageMode === "yearly"
       ? `2. 年度采购建议按月度理论耗量乘以 12 后向上取整至小数点后一位：${monthlyOilLiters}L/月 × 12 = ${measuredOilLiters}L/年 -> ${recommendedOilLiters}L/年。`
       : result.usageMode === "custom"
         ? `2. 本报价按客户指定用量计算，并向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`
-        : `2. 月度采购建议按理论耗量向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
+        : `2. 月度采购建议按理论耗量向上取整至 0.5L：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
 
   return {
     meta: [
@@ -40,7 +50,7 @@ export function buildExcelRows(result: QuoteResult) {
         "香型",
         `${result.oilName}${result.oilDescription ? `（${result.oilDescription}）` : ""}`
       ],
-      ["报价编号", result.quoteNumber, result.usageBudgetLabel, `约${recommendedOilLiters}${result.usageUnitLabel}`],
+      ["报价编号", result.quoteNumber, result.usageBudgetLabel, budgetText],
       ["报价日期", result.quoteDate, "报价有效期", result.validity],
       ["报价类型", result.quoteTypeLabel, "", ""]
     ],
@@ -68,7 +78,9 @@ export function buildExcelRows(result: QuoteResult) {
         result.oilSaleQuantity.toFixed(1),
         result.oilUnitPrice,
         result.firstMonthOilAmount,
-        result.usageMode === "custom"
+        result.purchaseTotalMode === "singleBottle"
+          ? "单瓶 500ml 精油报价"
+          : result.usageMode === "custom"
           ? "客户指定采购量"
           : `建议${result.usageLabel}采购量（${recommendedOilLiters}${result.usageUnitLabel}）`
       ],

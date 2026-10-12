@@ -17,6 +17,7 @@ const result = calculateQuote({
   oilUnitPrice: 123.3,
   oilPriceUnit: "liter",
   quoteType: "standard",
+  purchaseTotalMode: "monthly",
   usageMode: "monthly",
   customOilLiters: 0,
   includeDevices: true,
@@ -63,6 +64,7 @@ describe("export contract", () => {
     const packageResult = calculateQuote({
       ...result,
       quoteType: "annualPackage",
+      purchaseTotalMode: "annual",
       usageMode: "yearly",
       customOilLiters: 0,
       sites: result.sites

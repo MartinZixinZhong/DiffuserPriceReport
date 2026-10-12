@@ -8,14 +8,24 @@ export function buildPdfModel(result: QuoteResult) {
   const recommendedOilLiters = result.recommendedOilLiters.toFixed(1);
   const measuredOilLiters = result.totalTheoreticalOilLiters.toFixed(3);
   const monthlyOilLiters = result.monthlyTheoreticalOilLiters.toFixed(3);
+  const budgetText =
+    result.purchaseTotalMode === "singleBottle"
+      ? `${result.oilSaleQuantity.toFixed(0)}瓶（500ml）`
+      : `约${recommendedOilLiters}${result.usageUnitLabel}`;
   const followUpQuantityLabel =
-    result.usageMode === "custom" ? "本次指定采购量" : `本次建议${result.usageLabel}采购量`;
+    result.purchaseTotalMode === "singleBottle"
+      ? "单瓶采购量"
+      : result.usageMode === "custom"
+        ? "本次指定采购量"
+        : `本次建议${result.usageLabel}采购量`;
   const usageNote =
-    result.usageMode === "yearly"
+    result.purchaseTotalMode === "singleBottle"
+      ? "本报价按单瓶 500ml 精油采购展示，客户可按实际需要增加采购瓶数。"
+      : result.usageMode === "yearly"
       ? `年度采购建议按月度理论耗量乘以 12 后向上取整至小数点后一位：${monthlyOilLiters}L/月 × 12 = ${measuredOilLiters}L/年 -> ${recommendedOilLiters}L/年。`
       : result.usageMode === "custom"
         ? `本报价按客户指定用量计算，并向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`
-        : `月度采购建议按理论耗量向上取整至小数点后一位：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
+        : `月度采购建议按理论耗量向上取整至 0.5L：${measuredOilLiters}L -> ${recommendedOilLiters}L。`;
 
   return {
     title: "GlassMartin 商用香薰系统报价单",
@@ -72,6 +82,7 @@ export function buildPdfModel(result: QuoteResult) {
       followUpQuantityLabel,
       quoteTypeLabel: result.quoteTypeLabel,
       usageBudgetLabel: result.usageBudgetLabel,
+      budgetText,
       usageUnitLabel: result.usageUnitLabel,
       oilAmountLabel: result.oilAmountLabel,
       purchaseTotalLabel: result.purchaseTotalLabel,
@@ -294,7 +305,7 @@ export function buildPdfHtml(model: PdfModel): string {
         <div><strong>有效期：</strong>${escapeHtml(model.validity)}</div>
         <div><strong>报价单位：</strong>${escapeHtml(model.quoteCompany)}</div>
         <div><strong>报价类型：</strong>${escapeHtml(model.summary.quoteTypeLabel)}</div>
-        <div><strong>${escapeHtml(model.summary.usageBudgetLabel)}：</strong>约${escapeHtml(model.summary.recommendedOilLiters)}${escapeHtml(model.summary.usageUnitLabel)}</div>
+        <div><strong>${escapeHtml(model.summary.usageBudgetLabel)}：</strong>${escapeHtml(model.summary.budgetText)}</div>
       </section>
       <h2 class="pdf-section-title">一、报价明细</h2>
       <table class="pdf-table">

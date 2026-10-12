@@ -17,6 +17,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 123.3,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -67,6 +68,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 100,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -124,6 +126,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 80,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -146,8 +149,8 @@ describe("calculateQuote", () => {
     });
 
     expect(result.totalTheoreticalOilLiters).toBe(0.075);
-    expect(result.recommendedOilLiters).toBe(0.1);
-    expect(result.firstMonthOilAmount).toBe(8);
+    expect(result.recommendedOilLiters).toBe(0.5);
+    expect(result.firstMonthOilAmount).toBe(40);
   });
 
   it("rounds recommended oil liters up to one decimal place", () => {
@@ -165,6 +168,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 80,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -206,6 +210,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 80,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "yearly",
       customOilLiters: 0,
       includeDevices: true,
@@ -250,6 +255,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 80,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "custom",
       customOilLiters: 12.34,
       includeDevices: true,
@@ -294,8 +300,9 @@ describe("calculateQuote", () => {
       oilUnitPrice: 412,
       oilPriceUnit: "halfLiter",
       quoteType: "standard",
+      purchaseTotalMode: "singleBottle",
       usageMode: "custom",
-      customOilLiters: 5,
+      customOilLiters: 0,
       includeDevices: false,
       showSiteConfig: false,
       showFollowUpPurchase: true,
@@ -315,15 +322,16 @@ describe("calculateQuote", () => {
       ]
     });
 
-    expect(result.recommendedOilLiters).toBe(5);
-    expect(result.oilSaleQuantity).toBe(10);
+    expect(result.recommendedOilLiters).toBe(0.5);
+    expect(result.oilSaleQuantity).toBe(1);
     expect(result.oilSaleUnitLabel).toBe("500ml");
     expect(result.oilUnitPricePerLiter).toBe(824);
-    expect(result.firstMonthOilAmount).toBe(4120);
-    expect(result.firstPurchaseTotal).toBe(4120);
+    expect(result.firstMonthOilAmount).toBe(412);
+    expect(result.firstPurchaseTotal).toBe(412);
     expect(result.followUpOilUnitPrice).toBe(329.6);
     expect(result.followUpOilUnitPricePerLiter).toBe(659.2);
-    expect(result.followUpMonthlyOilFee).toBe(3296);
+    expect(result.followUpMonthlyOilFee).toBe(329.6);
+    expect(result.purchaseTotalLabel).toBe("单瓶（500ml）采购合计");
   });
 
   it("calculates an annual package quote total", () => {
@@ -341,6 +349,7 @@ describe("calculateQuote", () => {
       oilUnitPrice: 100,
       oilPriceUnit: "liter",
       quoteType: "annualPackage",
+      purchaseTotalMode: "annual",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -389,6 +398,7 @@ describe("validateQuoteInput", () => {
       oilUnitPrice: -2,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "monthly",
       customOilLiters: 0,
       includeDevices: true,
@@ -437,6 +447,7 @@ describe("validateQuoteInput", () => {
       oilUnitPrice: 80,
       oilPriceUnit: "liter",
       quoteType: "standard",
+      purchaseTotalMode: "monthly",
       usageMode: "custom",
       customOilLiters: 0,
       includeDevices: true,

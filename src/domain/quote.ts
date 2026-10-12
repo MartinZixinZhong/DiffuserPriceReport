@@ -13,6 +13,7 @@ export type QuoteSiteInput = {
 export type QuoteUsageMode = "monthly" | "yearly" | "custom";
 export type QuoteType = "standard" | "annualPackage";
 export type OilPriceUnit = "liter" | "halfLiter";
+export type PurchaseTotalMode = "monthly" | "annual" | "singleBottle";
 
 export type QuoteInput = {
   customerName: string;
@@ -28,6 +29,7 @@ export type QuoteInput = {
   oilUnitPrice: number;
   oilPriceUnit: OilPriceUnit;
   quoteType: QuoteType;
+  purchaseTotalMode: PurchaseTotalMode;
   usageMode: QuoteUsageMode;
   customOilLiters: number;
   includeDevices: boolean;
@@ -73,6 +75,7 @@ export type QuoteResult = Omit<QuoteInput, "sites"> & {
 const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const roundLiters = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
 const ceilLitersToOneDecimal = (value: number) => Math.ceil(value * 10 - Number.EPSILON) / 10;
+const ceilLitersToHalf = (value: number) => Math.ceil(value * 2 - Number.EPSILON) / 2;
 const roundQuantity = (value: number) => Math.round((value + Number.EPSILON) * 10) / 10;
 
 const usageLabels: Record<
@@ -122,8 +125,12 @@ const usageLabels: Record<
 };
 
 export function calculateQuote(input: QuoteInput): QuoteResult {
-  const usageMode = input.quoteType === "annualPackage" ? "yearly" : input.usageMode;
-  const priceUnitLiters = input.oilPriceUnit === "halfLiter" ? 0.5 : 1;
+  const usageMode =
+    input.quoteType === "annualPackage" || input.purchaseTotalMode === "annual"
+      ? "yearly"
+      : input.usageMode;
+  const oilPriceUnit = input.purchaseTotalMode === "singleBottle" ? "halfLiter" : input.oilPriceUnit;
+  const priceUnitLiters = oilPriceUnit === "halfLiter" ? 0.5 : 1;
   const sites = input.sites.map((site) => {
     const effectiveSprayRatio = site.spraySeconds / (site.spraySeconds + site.pauseSeconds);
     const effectiveDailyHours = site.dailyHours * effectiveSprayRatio;
@@ -157,11 +164,18 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
       : usageMode === "custom"
         ? roundLiters(input.customOilLiters)
         : monthlyTheoreticalOilLiters;
-  const recommendedOilLiters = ceilLitersToOneDecimal(totalTheoreticalOilLiters);
+  const recommendedOilLiters =
+    input.purchaseTotalMode === "singleBottle"
+      ? 0.5
+      : input.purchaseTotalMode === "monthly" && usageMode === "monthly"
+        ? ceilLitersToHalf(totalTheoreticalOilLiters)
+        : ceilLitersToOneDecimal(totalTheoreticalOilLiters);
   const oilUnitPricePerLiter = roundCurrency(input.oilUnitPrice / priceUnitLiters);
   const oilSaleQuantity = roundQuantity(recommendedOilLiters / priceUnitLiters);
   const oilSaleUnitLabel =
-    input.oilPriceUnit === "halfLiter"
+    input.purchaseTotalMode === "singleBottle"
+      ? "500ml"
+      : oilPriceUnit === "halfLiter"
       ? usageMode === "monthly"
         ? "500ml/月"
         : usageMode === "yearly"
@@ -170,7 +184,7 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
       : input.quoteType === "annualPackage"
         ? "升/年"
         : usageLabels[usageMode].usageUnitLabel;
-  const oilPriceUnitLabel = input.oilPriceUnit === "halfLiter" ? "元/500ml" : "元/L";
+  const oilPriceUnitLabel = oilPriceUnit === "halfLiter" ? "元/500ml" : "元/L";
   const deviceAmount = input.includeDevices
     ? roundCurrency(totalDeviceQuantity * input.deviceUnitPrice)
     : 0;
@@ -184,7 +198,7 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
   );
   const followUpMonthlyOilFee = roundCurrency(oilSaleQuantity * followUpOilUnitPrice);
 
-  const labels =
+  const baseLabels =
     input.quoteType === "annualPackage"
       ? {
           ...usageLabels.yearly,
@@ -197,9 +211,27 @@ export function calculateQuote(input: QuoteInput): QuoteResult {
           ...usageLabels[usageMode],
           showFollowUpOilFee: input.showFollowUpPurchase
         };
+  const labels = {
+    ...baseLabels,
+    usageBudgetLabel:
+      input.purchaseTotalMode === "singleBottle" ? "单瓶精油报价" : baseLabels.usageBudgetLabel,
+    oilAmountLabel:
+      input.purchaseTotalMode === "singleBottle" ? "单瓶（500ml）精油金额" : baseLabels.oilAmountLabel,
+    purchaseTotalLabel:
+      input.purchaseTotalMode === "singleBottle"
+        ? "单瓶（500ml）采购合计"
+        : input.purchaseTotalMode === "annual" && input.quoteType !== "annualPackage"
+          ? "包年采购合计"
+          : baseLabels.purchaseTotalLabel,
+    followUpOilFeeLabel:
+      input.purchaseTotalMode === "singleBottle"
+        ? "后续单瓶精油采购"
+        : baseLabels.followUpOilFeeLabel
+  };
 
   return {
     ...input,
+    oilPriceUnit,
     usageMode,
     sites,
     totalDeviceQuantity,
@@ -230,7 +262,11 @@ export function validateQuoteInput(input: QuoteInput): string[] {
   if (input.deviceUnitPrice < 0) errors.push("设备单价不能小于 0");
   if (input.oilUnitPrice < 0) errors.push("精油单价不能小于 0");
   if (input.customOilLiters < 0) errors.push("客户指定用量不能小于 0");
-  if (input.usageMode === "custom" && input.customOilLiters <= 0) {
+  if (
+    input.usageMode === "custom" &&
+    input.purchaseTotalMode !== "singleBottle" &&
+    input.customOilLiters <= 0
+  ) {
     errors.push("客户指定用量必须大于 0");
   }
   if (input.followUpDiscountPercent < 0 || input.followUpDiscountPercent > 100) {

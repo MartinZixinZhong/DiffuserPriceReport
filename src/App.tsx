@@ -21,6 +21,7 @@ const initialQuote: QuoteInput = {
   oilUnitPrice: 0,
   oilPriceUnit: "liter",
   quoteType: "standard",
+  purchaseTotalMode: "monthly",
   usageMode: "monthly",
   customOilLiters: 0,
   includeDevices: true,
@@ -75,7 +76,17 @@ export default function App() {
     setQuote((current) => ({
       ...current,
       quoteType,
+      purchaseTotalMode: quoteType === "annualPackage" ? "annual" : current.purchaseTotalMode,
       usageMode: quoteType === "annualPackage" ? "yearly" : current.usageMode
+    }));
+  };
+
+  const updatePurchaseTotalMode = (purchaseTotalMode: QuoteInput["purchaseTotalMode"]) => {
+    setQuote((current) => ({
+      ...current,
+      purchaseTotalMode,
+      oilPriceUnit: purchaseTotalMode === "singleBottle" ? "halfLiter" : current.oilPriceUnit,
+      usageMode: purchaseTotalMode === "annual" ? "yearly" : current.usageMode
     }));
   };
 
@@ -209,6 +220,20 @@ export default function App() {
           >
             <option value="standard">标准采购报价</option>
             <option value="annualPackage">包年报价</option>
+          </select>
+        </label>
+        <label>
+          采购合计显示
+          <select
+            disabled={quote.quoteType === "annualPackage"}
+            value={quote.purchaseTotalMode}
+            onChange={(event) =>
+              updatePurchaseTotalMode(event.target.value as QuoteInput["purchaseTotalMode"])
+            }
+          >
+            <option value="monthly">首月采购合计</option>
+            <option value="annual">包年采购合计</option>
+            <option value="singleBottle">单瓶（500ml）采购合计</option>
           </select>
         </label>
         <label className="checkbox-label">
@@ -389,7 +414,9 @@ export default function App() {
             <div>
               <dt>建议采购量</dt>
               <dd>
-                {result.recommendedOilLiters.toFixed(1)} {result.usageUnitLabel}
+                {result.purchaseTotalMode === "singleBottle"
+                  ? `${result.oilSaleQuantity.toFixed(0)} 瓶（500ml）`
+                  : `${result.recommendedOilLiters.toFixed(1)} ${result.usageUnitLabel}`}
               </dd>
             </div>
             {result.includeDevices && (
